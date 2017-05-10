@@ -20,6 +20,15 @@ module PagSeguro
         end
       end
 
+      def BigDecimalSafe(amount)
+        begin
+          amount = BigDecimal(amount)
+        rescue
+          amount = BigDecimal(0)
+        end
+        return amount
+      end
+
       def serialize_status_history
         xml.css("status").map do |node|
           PagSeguro::TransactionStatus.new(
@@ -59,21 +68,21 @@ module PagSeguro
       end
 
       def serialize_amounts(data)
-        data[:gross_amount] = BigDecimal(xml.css("grossAmount").text)
-        data[:discount_amount] = BigDecimal(xml.css("discountAmount").text)
-        data[:net_amount] = BigDecimal(xml.css("netAmount").text)
-        data[:extra_amount] = BigDecimal(xml.css("extraAmount").text)
+        data[:gross_amount] = BigDecimalSafe(xml.css("grossAmount").text)
+        data[:discount_amount] = BigDecimalSafe(xml.css("discountAmount").text)
+        data[:net_amount] = BigDecimalSafe(xml.css("netAmount").text)
+        data[:extra_amount] = BigDecimalSafe(xml.css("extraAmount").text)
         data[:installments] = xml.css("installmentCount").text.to_i
       end
 
       def serialize_creditor(data)
         data[:creditor_fees] = {
-          intermediation_rate_amount: BigDecimal(xml.css("creditorFees > intermediationRateAmount").text),
-          intermediation_fee_amount: BigDecimal(xml.css("creditorFees > intermediationFeeAmount").text),
-          installment_fee_amount: BigDecimal(xml.css("creditorFees > installmentFeeAmount").text),
-          operational_fee_amount: BigDecimal(xml.css("creditorFees > operationalFeeAmount").text),
-          commission_fee_amount: BigDecimal(xml.css("creditorFees > commissionFeeAmount").text),
-          efrete: BigDecimal(xml.css("creditorFees > efrete").text)
+          intermediation_rate_amount: BigDecimalSafe(xml.css("creditorFees > intermediationRateAmount").text),
+          intermediation_fee_amount: BigDecimalSafe(xml.css("creditorFees > intermediationFeeAmount").text),
+          installment_fee_amount: BigDecimalSafe(xml.css("creditorFees > installmentFeeAmount").text),
+          operational_fee_amount: BigDecimalSafe(xml.css("creditorFees > operationalFeeAmount").text),
+          commission_fee_amount: BigDecimalSafe(xml.css("creditorFees > commissionFeeAmount").text),
+          efrete: BigDecimalSafe(xml.css("creditorFees > efrete").text)
         }
       end
 
@@ -83,8 +92,8 @@ module PagSeguro
         xml.css("paymentReleases > paymentRelease").each do |node|
           payment_release = {}
           payment_release[:installment] = node.css("installment").text
-          payment_release[:total_amount] = BigDecimal(node.css("totalAmount").text)
-          payment_release[:release_amount] = BigDecimal(node.css("releaseAmount").text)
+          payment_release[:total_amount] = BigDecimalSafe(node.css("totalAmount").text)
+          payment_release[:release_amount] = BigDecimalSafe(node.css("releaseAmount").text)
           payment_release[:status] = node.css("status").text
           payment_release[:release_date] = Time.parse(node.css("releaseDate").text)
 
@@ -100,7 +109,7 @@ module PagSeguro
           item[:id] = node.css("id").text
           item[:description] = node.css("description").text
           item[:quantity] = node.css("quantity").text.to_i
-          item[:amount] = BigDecimal(node.css("amount").text)
+          item[:amount] = BigDecimalSafe(node.css("amount").text)
 
           data[:items] << item
         end
@@ -134,7 +143,7 @@ module PagSeguro
       def serialize_shipping(data)
         shipping = {
           type_id: xml.css("shipping > type").text,
-          cost: BigDecimal(xml.css("shipping > cost").text),
+          cost: BigDecimalSafe(xml.css("shipping > cost").text),
         }
 
         serialize_address(shipping)
